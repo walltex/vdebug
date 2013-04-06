@@ -20,11 +20,7 @@ class Ui:
         self.tabnr = None
 
     def is_modified(self):
-       modified = int(vim.eval('&mod'))v
-       if modified:
-           return True
-       else:
-           return False
+        Vim.is_buffer_modified()
 
     def open(self):
         if self.is_open:
@@ -118,27 +114,16 @@ class Ui:
 
     def remove_breakpoint(self,breakpoint):
         id = breakpoint.id
-        vim.command('sign unplace %i' % id)
+        Vim.remove_breakpoint_sign(id)
         if self.breakpointwin.is_open:
             self.breakpointwin.remove_breakpoint(id)
 
     def get_breakpoint_sign_positions(self):
-        sign_lines = self.command('sign place').split("\n")
-        positions = {}
-        for line in sign_lines:
-            if "name=breakpt" in line:
-                attributes = line.strip().split()
-                lineinfo = attributes[0].split('=')
-                idinfo = attributes[1].split('=')
-                positions[idinfo[1]] = lineinfo[1]
-        return positions
+        return Vim.signs_of_type('breakpt')
 
     # Execute a vim command and return the output.
     def command(self,cmd):
-        vim.command('redir => _tmp')
-        vim.command('silent %s' % cmd)
-        vim.command('redir END')
-        return vim.eval('_tmp')
+        return Vim.command(cmd)
 
     def say(self,string):
         """ Vim picks up Python prints, so just print """
@@ -146,9 +131,7 @@ class Ui:
         vdebug.log.Log(string,vdebug.log.Logger.INFO)
 
     def error(self,string):
-        vim.command('echohl Error | echo "'+\
-                str(string).replace('"','\\"')+\
-                '" | echohl None')
+        Vim.error(string)
         vdebug.log.Log(string,vdebug.log.Logger.ERROR)
 
     def close(self):
@@ -165,9 +148,9 @@ class Ui:
 
         vdebug.log.Log.remove_logger('WindowLogger')
         if self.tabnr:
-            vim.command('silent! '+self.tabnr+'tabc!')
+            Vim.close_tab(self.tabnr)
         if self.current_tab:
-            vim.command('tabn '+self.current_tab)
+            Vim.change_tab(self.current_tab)
 
         self.watchwin = None
         self.stackwin = None
@@ -175,7 +158,7 @@ class Ui:
 
 
     def __get_srcwin_name(self):
-        return vim.current.buffer.name
+        return Vim.current_buffer_name()
 
     def __get_srcwinno_by_name(self,name):
         i = 1
@@ -192,7 +175,3 @@ class Ui:
         vdebug.log.Log("Returning window number %d" % i,\
                 vdebug.log.Logger.INFO)
         return i
-
-    def __get_buf_list(self):
-        return vim.eval("range(1, bufnr('$'))")
-

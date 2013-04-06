@@ -72,12 +72,90 @@ class VimTest(unittest.TestCase):
         Vim.line_at_row(10)
         self.module.eval.assert_called_with("getline(10)")
 
-    def test_place_breakpoint_sign_command(self):
-        Vim.place_breakpoint_sign(110, 'the_file', 30)
+    def test_place_sign_command(self):
+        Vim.place_sign(110, 'breakpt', 'the_file', 30)
 
         self.module.command.assert_called_with(\
             'sign place 110 name=breakpt line=30 file=the_file')
 
-    def test_place_breakpoint_sign_returns_class(self):
-        retval = Vim.place_breakpoint_sign(110, 'the_file', 30)
+    def test_place_sign_returns_class(self):
+        retval = Vim.place_sign(110, 'breakpt', 'the_file', 30)
         self.assertIs(Vim, retval)
+
+    def test_remove_sign_command(self):
+        Vim.remove_sign(110)
+
+        self.module.command.assert_called_with('sign unplace 110')
+
+    def test_remove_sign_command_with_string_arg(self):
+        Vim.remove_sign("150")
+
+        self.module.command.assert_called_with('sign unplace 150')
+
+    def test_signs_of_type_breakpt(self):
+        self.module.eval.return_value = """ --- Signs ---
+Signs for plugin/python/vdebug/ui/vimui/ui.py:
+    line=23  id=5009  name=SyntasticError
+Signs for plugin/python/vdebug/ui/vimui/api.py:
+    line=30  id=11000  name=breakpt
+    line=38  id=11001  name=breakpt
+Signs for tests/test_ui_vimui_api.py:
+    line=96  id=5010  name=SyntasticError"""
+
+        signs = Vim.signs_of_type('breakpt')
+        self.assertEqual('30', signs['11000'])
+        self.assertEqual('38', signs['11001'])
+
+    def test_signs_of_type_syntastic(self):
+        self.module.eval.return_value = """ --- Signs ---
+Signs for plugin/python/vdebug/ui/vimui/ui.py:
+    line=23  id=5009  name=SyntasticError
+Signs for plugin/python/vdebug/ui/vimui/api.py:
+    line=30  id=11000  name=breakpt
+    line=38  id=11001  name=breakpt
+Signs for tests/test_ui_vimui_api.py:
+    line=96  id=5010  name=SyntasticError"""
+
+        signs = Vim.signs_of_type('SyntasticError')
+        self.assertEqual('23', signs['5009'])
+        self.assertEqual('96', signs['5010'])
+
+    def test_signs_of_type_command(self):
+        Vim.signs_of_type('blargh')
+        self.module.command.assert_any_call('sign place')
+        self.module.eval.assert_called_with('_vdebug')
+
+    def test_command_calls_commands(self):
+        Vim.command('blargh')
+        self.module.command.assert_any_call('redir => _vdebug')
+        self.module.command.assert_any_call('blargh')
+        self.module.command.assert_any_call('redir END')
+        self.module.eval.assert_called_with('_vdebug')
+
+    def test_error(self):
+        Vim.error('this is an error')
+        self.module.command.assert_called_with(\
+            'echohl Error | echo "this is an error" | echohl None')
+
+    def test_error_handles_quotes(self):
+        Vim.error('this is an "error"')
+        self.module.command.assert_called_with(\
+            'echohl Error | echo "this is an \\"error\\"" | echohl None')
+
+    def test_close_tab(self):
+        Vim.close_tab(3)
+        self.module.command.assert_called_with('silent! 3tabc!')
+
+    def test_change_tab(self):
+        Vim.change_tab(2)
+        self.module.command.assert_called_with('tabn 2')
+
+    def test_is_buffer_modified_return(self):
+        self.module.eval.return_value = "1"
+        self.assertEqual(True, Vim.is_buffer_modified())
+
+    def test_is_buffer_modified_eval(self):
+        self.module.eval.return_value = 0
+        ret = Vim.is_buffer_modified()
+        self.module.eval.assert_called_with('&mod')
+        self.assertEqual(False, ret)
