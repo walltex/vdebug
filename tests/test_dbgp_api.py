@@ -1,11 +1,9 @@
-if __name__ == "__main__":
-    import sys
-    sys.path.append('../plugin/python/')
-import unittest2 as unittest
+import helper
 import vdebug.dbgp
+import unittest2 as unittest
 from mock import MagicMock, patch
 
-class ApiTest(unittest.TestCase):      
+class ApiTest(unittest.TestCase):
     """Test the Api class in the vdebug.dbgp module."""
 
     init_msg = """<?xml version="1.0"

@@ -5,6 +5,7 @@ import vdebug.log
 import vdebug.opts
 from .window import BreakpointWindow, WatchWindow, StackWindow,\
                                     StatusWindow, LogWindow, SourceWindow
+from .api import Vim
 
 class Ui:
     """Ui layer which manages the Vim windows.
@@ -19,7 +20,7 @@ class Ui:
         self.tabnr = None
 
     def is_modified(self):
-       modified = int(vim.eval('&mod'))
+       modified = int(vim.eval('&mod'))v
        if modified:
            return True
        else:
@@ -31,14 +32,14 @@ class Ui:
         self.is_open = True
 
         try:
-            cur_buf_name = vim.eval("bufname('%')")
+            cur_buf_name = Vim.current_buffer()
             if cur_buf_name is None:
                 cur_buf_name = ''
 
-            self.current_tab = vim.eval("tabpagenr()")
+            self.current_tab = Vim.current_tab()
 
-            vim.command('silent tabnew ' + cur_buf_name)
-            self.tabnr = vim.eval("tabpagenr()")
+            Vim.create_tab(cur_buf_name)
+            self.tabnr = Vim.current_tab()
 
             srcwin_name = self.__get_srcwin_name()
 
@@ -94,16 +95,16 @@ class Ui:
         self.statuswin.insert(details,1,True)
 
     def get_current_file(self):
-        return vdebug.util.FilePath(vim.current.buffer.name)
+        return vdebug.util.FilePath(Vim.current_buffer_name())
 
     def get_current_row(self):
-        return vim.current.window.cursor[0]
+        return Vim.current_cursor_row()
 
     def get_current_line(self):
-        return self.get_line(self.get_current_row())
+        return Vim.current_line()
 
-    def get_line(self,row):
-        return vim.eval("getline(" + str(row) + ")")
+    def get_line(self, row):
+        return Vim.line_at_row(row)
 
     def register_breakpoint(self,breakpoint):
         if breakpoint.type == 'line':
@@ -113,9 +114,7 @@ class Ui:
             self.breakpointwin.add_breakpoint(breakpoint)
 
     def place_breakpoint(self,sign_id,file,line):
-        vim.command('sign place '+str(sign_id)+\
-                ' name=breakpt line='+str(line)+\
-                ' file='+file.as_local())
+        Vim.place_breakpoint_sign(sign_id, file.as_local(), line)
 
     def remove_breakpoint(self,breakpoint):
         id = breakpoint.id
