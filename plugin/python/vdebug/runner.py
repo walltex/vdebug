@@ -2,7 +2,7 @@
 
 import vdebug.dbgp
 import vdebug.log
-import vdebug.ui.vimui
+import vdebug.ui.vimui.ui
 import socket
 import vim
 import vdebug.breakpoint
@@ -21,7 +21,7 @@ class Runner:
         vdebug.opts.Options.set(vim.eval('g:vdebug_options'))
         self.breakpoints = vdebug.breakpoint.Store()
         self.keymapper = vdebug.util.Keymapper()
-        self.ui = vdebug.ui.vimui.Ui(self.breakpoints)
+        self.ui = vdebug.ui.vimui.ui.Ui(self.breakpoints)
 
     def open(self):
         """ Open the connection and debugging vdebug.ui.
